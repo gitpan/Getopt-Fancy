@@ -5,7 +5,7 @@ use Getopt::Long;
 
 use vars qw($VERSION);
 
-$VERSION = "0.01";
+$VERSION = "0.02";
 
 # GT      = GetOptions spefication (=i, :s, etc)
 # EX      = Example arg
@@ -251,7 +251,7 @@ __END__
 
 =head1 NAME
 
-Getopt::Fancy - Object approach to handling commandline options, focusing on end user happiness
+Getopt::Fancy - Object approach to handling command line options, focusing on end user happiness
 
 =head1 SYNOPSIS
 
@@ -275,7 +275,7 @@ Getopt::Fancy - Object approach to handling commandline options, focusing on end
                DESC => "Give option names and it'll print the help for just those options, otherwise all.", 
                SECTION=>"Misc Params", COMMAS=>1);
 
-    # Get the commandline options
+    # Get the command line options
     my $error_msg = $opts->get_options();
     print_usage($error_msg) if $error_msg;
 
@@ -307,7 +307,7 @@ Getopt::Fancy - Object approach to handling commandline options, focusing on end
 
 =head1 DESCRIPTION
 
-C<Getopt::Fancy> Allows commandline options to be all in one place in your script
+C<Getopt::Fancy> Allows command line options to be all in one place in your script
 including default values, allowed values, user-friendly descriptions,
 required flags and pattern matching requirements. Ofttimes script writers skimp
 on the usage information or have out-dated help information. This modules helps
@@ -325,7 +325,7 @@ Construct a new object.
 
 =item C<$opts-E<gt>add($opt_name, %config)>
 
-C<add()> is where you specify the commandline options you want to accept
+C<add()> is where you specify the command line options you want to accept
 and the configuration for each.
 
     $opts->add("hostname", GT   => "=s",
@@ -383,7 +383,7 @@ you to group similar options together
 
 =item C<$opts-E<gt>get_options()>
 
-Call this when it's time to read and parse the commandline options. It will return a human readable string describing to the
+Call this when it's time to read and parse the command line options. It will return a human readable string describing to the
 end user what they did wrong. If all is well, returns undef.
 
 After you call this, you can then treat $opts as a hash ref: $opts->{my_option}

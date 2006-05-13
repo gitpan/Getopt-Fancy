@@ -1,5 +1,5 @@
 NAME
-    Getopt::Fancy - Object approach to handling commandline options,
+    Getopt::Fancy - Object approach to handling command line options,
     focusing on end user happiness
 
 SYNOPSIS
@@ -23,7 +23,7 @@ SYNOPSIS
                    DESC => "Give option names and it'll print the help for just those options, otherwise all.", 
                    SECTION=>"Misc Params", COMMAS=>1);
 
-        # Get the commandline options
+        # Get the command line options
         my $error_msg = $opts->get_options();
         print_usage($error_msg) if $error_msg;
 
@@ -54,7 +54,7 @@ SYNOPSIS
         }
 
 DESCRIPTION
-    "Getopt::Fancy" Allows commandline options to be all in one place in
+    "Getopt::Fancy" Allows command line options to be all in one place in
     your script including default values, allowed values, user-friendly
     descriptions, required flags and pattern matching requirements. Ofttimes
     script writers skimp on the usage information or have out-dated help
@@ -67,7 +67,7 @@ METHODS
         Construct a new object.
 
     "$opts->add($opt_name, %config)"
-        "add()" is where you specify the commandline options you want to
+        "add()" is where you specify the command line options you want to
         accept and the configuration for each.
 
             $opts->add("hostname", GT   => "=s",
@@ -110,7 +110,7 @@ METHODS
             similar options together
 
     "$opts->get_options()"
-        Call this when it's time to read and parse the commandline options.
+        Call this when it's time to read and parse the command line options.
         It will return a human readable string describing to the end user
         what they did wrong. If all is well, returns undef.
 

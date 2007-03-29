@@ -5,7 +5,7 @@ use Getopt::Long;
 
 use vars qw($VERSION);
 
-$VERSION = "0.02";
+$VERSION = "0.03";
 
 # GT      = GetOptions spefication (=i, :s, etc)
 # EX      = Example arg
@@ -18,8 +18,8 @@ $VERSION = "0.02";
 # REGEX   = regex that the arg has to match
 
 my $conf;
-my $maxoptlen;
-my $maxexlen;
+my $maxoptlen = 0;
+my $maxexlen = 0;
 my $error_msg;
 
 sub new
@@ -41,7 +41,7 @@ sub add
 
   return unless $key;
   $maxoptlen = length ($key) if (length($key) > $maxoptlen);
-  $maxexlen = length ($values{EX}) if (length($values{EX}) > $maxexlen);
+  $maxexlen = length ($values{EX}) if ($values{EX} && length($values{EX}) > $maxexlen);
   if ($values{YIV}) {
     if (! ref $values{YIV}) {
       $aref = [$values{YIV}];
@@ -104,7 +104,8 @@ sub get_options
   foreach $key (keys %{$conf}) {
     next unless (defined $conf->{$key}->{DEF});
     next if (defined $self->{$key});
-    if (index($conf->{$key}->{GT}, "@") > 0 &&
+    if ($conf->{$key}->{GT} &&
+        index($conf->{$key}->{GT}, "@") > 0 &&
         !ref $conf->{$key}->{DEF}) {
       $self->{$key} = [$conf->{$key}->{DEF}];
     } else {
@@ -114,7 +115,7 @@ sub get_options
 
   # Expand any comma separated lists
   foreach $key (keys %{$conf}) {
-    next unless (index($conf->{$key}->{GT}, "@") > 0);
+    next unless ($conf->{$key}->{GT} && index($conf->{$key}->{GT}, "@") > 0);
     next unless ($conf->{$key}->{COMMAS});
     next unless (defined $self->{$key});
     $values = $self->{$key};
@@ -210,7 +211,7 @@ sub get_usage
   my $result;
   my $key;
   my $defs;
-  my $section;
+  my $section = "";
   my @keys;
   
   if (defined $options) {
@@ -220,7 +221,7 @@ sub get_usage
   }
 
   foreach $key (@keys) {
-    my $req;
+    my $req = "";
 #    if (defined $req_only) {
 #      next if ($req_only && !$conf->{$key}->{REQ});
 #      next if (!$req_only && $conf->{$key}->{REQ});
@@ -236,7 +237,7 @@ sub get_usage
     }
 
     $req = "[REQ] " if $conf->{$key}->{REQ};
-    $conf->{$key}->{DESC} =~ s/\n/\n$spaces/og;
+    $conf->{$key}->{DESC} =~ s/\n/\n$spaces/og if $conf->{$key}->{DESC};
     $result .= sprintf "  -%-${maxoptlen}s %-${maxexlen}s : ${req}%s", $key, $conf->{$key}->{EX}, $conf->{$key}->{DESC};
     $result .= "\n${spaces}Default = " . join(", ", @{$defs}) if $conf->{$key}->{DEF};
     $result .= "\n${spaces}Allowed = " . join(", ", @{$conf->{$key}->{ALLOWED}}) if $conf->{$key}->{ALLOWED};

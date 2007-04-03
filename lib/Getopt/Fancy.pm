@@ -5,7 +5,7 @@ use Getopt::Long;
 
 use vars qw($VERSION);
 
-$VERSION = "0.03";
+$VERSION = "0.04";
 
 # GT      = GetOptions spefication (=i, :s, etc)
 # EX      = Example arg
@@ -282,6 +282,12 @@ Getopt::Fancy - Object approach to handling command line options, focusing on en
 
     print "Will dump this database: $opts->{db} \n";
     print "User wants help information on these: " . join(", ", @{$opts->{help}}) . "\n" if ($opts->{help});
+
+    # Copy the options to a hash
+    my %opts_hash = %{$opts};
+
+    print "This is my copy of db: $opts_hash{db}\n";
+
 
     print_usage() if $opts->{help};
     print_args() if $opts->{check_args};

@@ -5,7 +5,7 @@ use Getopt::Long;
 
 use vars qw($VERSION);
 
-$VERSION = "0.04";
+$VERSION = "0.05";
 
 # GT      = GetOptions spefication (=i, :s, etc)
 # EX      = Example arg
@@ -16,6 +16,8 @@ $VERSION = "0.04";
 # COMMAS  = Allow comma separated values for multi valued guys
 # SECTION = The section the arg belongs under (when printing usage)
 # REGEX   = regex that the arg has to match
+
+Getopt::Long::Configure ("no_ignore_case");
 
 my $conf;
 my $maxoptlen = 0;

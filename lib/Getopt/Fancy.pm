@@ -5,7 +5,7 @@ use Getopt::Long;
 
 use vars qw($VERSION);
 
-$VERSION = "0.05";
+$VERSION = "0.06";
 
 # GT      = GetOptions spefication (=i, :s, etc)
 # EX      = Example arg
@@ -19,17 +19,17 @@ $VERSION = "0.05";
 
 Getopt::Long::Configure ("no_ignore_case");
 
-my $conf;
-my $maxoptlen = 0;
-my $maxexlen = 0;
-my $error_msg;
-
+our %config;
+our %intvars;
+  
 sub new
 {
   my $type = shift;
   my $class = ref($type) || $type;
-  
-  return bless {}, $class;
+  my $self = bless {}, $class;
+  $intvars{$self}->{maxexlen} = 0;
+  $intvars{$self}->{maxoptlen} = 0;
+  return $self;
 }
 
 sub add
@@ -37,13 +37,12 @@ sub add
   my $self = shift;
   my $key = shift;
   my %values = @_;
-  my $aref;
-  my $val;
+  my ($aref, $val);
   my $use_yiv = 1;
 
   return unless $key;
-  $maxoptlen = length ($key) if (length($key) > $maxoptlen);
-  $maxexlen = length ($values{EX}) if ($values{EX} && length($values{EX}) > $maxexlen);
+  $intvars{$self}->{maxoptlen} = length ($key) if (length($key) > $intvars{$self}->{maxoptlen});
+  $intvars{$self}->{maxexlen} = length ($values{EX}) if ($values{EX} && length($values{EX}) > $intvars{$self}->{maxexlen});
   if ($values{YIV}) {
     if (! ref $values{YIV}) {
       $aref = [$values{YIV}];
@@ -58,16 +57,15 @@ sub add
     }
     $values{DEF} = $values{YIV} if $use_yiv;
   }
-  $conf->{$key} = \%values;
+  $config{$self}->{$key} = \%values;
 }
 
 sub get_values
 {
   my $self = shift;
-  my $key;
-  my $result;
-  my $values;
-  my $spaces = " " x ($maxoptlen + 5);
+  my ($key, $result, $values);
+  my $spaces = " " x ($intvars{$self}->{maxoptlen} + 5);
+  my $maxoptlen = $intvars{$self}->{maxoptlen};
 
   foreach $key (keys %{$self}) {
     if (! ref $self->{$key}) {
@@ -83,42 +81,41 @@ sub get_values
 
 sub get_error
 {
-  return $error_msg;
+  my $self = shift;
+  return $intvars{$self}->{error_msg};
 }
 
 sub get_options
 {
   my $self = shift;
-  my $key;
-  my $values;
-  my $value;
+  my ($key, $values, $value);
 
   # Set the =i, =s stuff
-  my @gopts = map {$_ .= $conf->{$_}->{GT};} keys %{$conf};
+  my @gopts = map {$_ .= $config{$self}->{$_}->{GT};} keys %{$config{$self}};
 
   # Get the options
   if (!GetOptions($self, @gopts)) {
-    $error_msg = "Invalid option.\n";
-    return ($error_msg);
+    $intvars{$self}->{error_msg} = "Invalid option.\n";
+    return ($intvars{$self}->{error_msg});
   }
 
   # Set the default values
-  foreach $key (keys %{$conf}) {
-    next unless (defined $conf->{$key}->{DEF});
+  foreach $key (keys %{$config{$self}}) {
+    next unless (defined $config{$self}->{$key}->{DEF});
     next if (defined $self->{$key});
-    if ($conf->{$key}->{GT} &&
-        index($conf->{$key}->{GT}, "@") > 0 &&
-        !ref $conf->{$key}->{DEF}) {
-      $self->{$key} = [$conf->{$key}->{DEF}];
+    if ($config{$self}->{$key}->{GT} &&
+        index($config{$self}->{$key}->{GT}, "@") > 0 &&
+        !ref $config{$self}->{$key}->{DEF}) {
+      $self->{$key} = [$config{$self}->{$key}->{DEF}];
     } else {
-      $self->{$key} = $conf->{$key}->{DEF};
+      $self->{$key} = $config{$self}->{$key}->{DEF};
     }
   }
 
   # Expand any comma separated lists
-  foreach $key (keys %{$conf}) {
-    next unless ($conf->{$key}->{GT} && index($conf->{$key}->{GT}, "@") > 0);
-    next unless ($conf->{$key}->{COMMAS});
+  foreach $key (keys %{$config{$self}}) {
+    next unless ($config{$self}->{$key}->{GT} && index($config{$self}->{$key}->{GT}, "@") > 0);
+    next unless ($config{$self}->{$key}->{COMMAS});
     next unless (defined $self->{$key});
     $values = $self->{$key};
     $self->{$key} = [];
@@ -129,13 +126,13 @@ sub get_options
 
 
   # Check for required values
-  foreach $key (keys %{$conf}) {
-    $error_msg .= "$key is required, but missing\n" if ($conf->{$key}->{REQ} && ! defined $self->{$key});
+  foreach $key (keys %{$config{$self}}) {
+    $intvars{$self}->{error_msg} .= "$key is required, but missing\n" if ($config{$self}->{$key}->{REQ} && ! defined $self->{$key});
   }
 
   # Check for REGEX conformity
-  foreach $key (keys %{$conf}) {
-    next unless defined ($conf->{$key}->{REGEX});
+  foreach $key (keys %{$config{$self}}) {
+    next unless defined ($config{$self}->{$key}->{REGEX});
     next unless defined ($self->{$key});
     if (! ref $self->{$key}) {
       $values = [$self->{$key}];
@@ -143,20 +140,20 @@ sub get_options
       $values = $self->{$key};
     }
     foreach $value (@{$values}) {
-      $error_msg .= "$value not a valid value for $key. Does not match regex: ".$conf->{$key}->{REGEX}."\n" if ($value !~ m/$conf->{$key}->{REGEX}/);
+      $intvars{$self}->{error_msg} .= "$value not a valid value for $key. Does not match regex: ".$config{$self}->{$key}->{REGEX}."\n" if ($value !~ m/$config{$self}->{$key}->{REGEX}/);
     }
   }
 
   # Check for allowed values
-  foreach $key (keys %{$conf}) {
-    next unless defined ($conf->{$key}->{ALLOWED});
+  foreach $key (keys %{$config{$self}}) {
+    next unless defined ($config{$self}->{$key}->{ALLOWED});
     next unless defined ($self->{$key});
     my $allowed;
     my %a;
-    if (! ref $conf->{$key}->{ALLOWED}) {
-      $allowed = [$conf->{$key}->{ALLOWED}];
+    if (! ref $config{$self}->{$key}->{ALLOWED}) {
+      $allowed = [$config{$self}->{$key}->{ALLOWED}];
     } else {
-      $allowed = $conf->{$key}->{ALLOWED};
+      $allowed = $config{$self}->{$key}->{ALLOWED};
     }
     map {$a{$_} = 1;} @{$allowed};
     
@@ -166,10 +163,10 @@ sub get_options
       $values = $self->{$key};
     }
     foreach $value (@{$values}) {
-      $error_msg .= "$value not a valid value for $key. Allowed values: " . join(", ", @{$allowed}) . "\n" unless ($a{$value});
+      $intvars{$self}->{error_msg} .= "$value not a valid value for $key. Allowed values: " . join(", ", @{$allowed}) . "\n" unless ($a{$value});
     }
   }
-  return $error_msg;
+  return $intvars{$self}->{error_msg};
 }
 
 sub check_for
@@ -179,8 +176,8 @@ sub check_for
   my $value = shift;
   my $item;
 
-  foreach $item (keys %{$conf}) {
-    return 1 if ($conf->{$item}->{$key} == $value);
+  foreach $item (keys %{$config{$self}}) {
+    return 1 if ($config{$self}->{$item}->{$key} == $value);
   }
   return 0;
 }
@@ -197,52 +194,45 @@ sub have_optional
   return $self->check_for("REQ", 0);
 }
 
-sub by_section
-{
-  $conf->{$a}->{SECTION} cmp $conf->{$b}->{SECTION}
-  or
-    $a cmp $b;
-}
 
 sub get_usage
 {
   my $self = shift;
   my $options = shift;
 #  my $req_only = shift;
-  my $spaces = " " x ($maxexlen + $maxoptlen + 7);
-  my $result;
-  my $key;
-  my $defs;
+  my $spaces = " " x ($intvars{$self}->{maxexlen} + $intvars{$self}->{maxoptlen} + 7);
+  my $maxexlen = $intvars{$self}->{maxexlen};
+  my $maxoptlen = $intvars{$self}->{maxoptlen};
+  my ($result, $key, $defs, @keys);
   my $section = "";
-  my @keys;
-  
+
   if (defined $options) {
     @keys = @{$options};
   } else {
-    @keys = sort by_section keys %{$conf};
+    @keys = sort { $config{$self}->{$a}->{SECTION} cmp $config{$self}->{$b}->{SECTION} or $a cmp $b} keys %{$config{$self}};
   }
 
   foreach $key (@keys) {
     my $req = "";
 #    if (defined $req_only) {
-#      next if ($req_only && !$conf->{$key}->{REQ});
-#      next if (!$req_only && $conf->{$key}->{REQ});
+#      next if ($req_only && !$config{$self}->{$key}->{REQ});
+#      next if (!$req_only && $config{$self}->{$key}->{REQ});
 #    }
-    if (! ref $conf->{$key}->{DEF}) {
-      $defs = [$conf->{$key}->{DEF}];
+    if (! ref $config{$self}->{$key}->{DEF}) {
+      $defs = [$config{$self}->{$key}->{DEF}];
     } else {
-      $defs = $conf->{$key}->{DEF};
+      $defs = $config{$self}->{$key}->{DEF};
     }
-    if ($section ne $conf->{$key}->{SECTION}) {
-      $section = $conf->{$key}->{SECTION};
+    if ($section ne $config{$self}->{$key}->{SECTION}) {
+      $section = $config{$self}->{$key}->{SECTION};
       $result .= "\n [${section}]:\n";
     }
 
-    $req = "[REQ] " if $conf->{$key}->{REQ};
-    $conf->{$key}->{DESC} =~ s/\n/\n$spaces/og if $conf->{$key}->{DESC};
-    $result .= sprintf "  -%-${maxoptlen}s %-${maxexlen}s : ${req}%s", $key, $conf->{$key}->{EX}, $conf->{$key}->{DESC};
-    $result .= "\n${spaces}Default = " . join(", ", @{$defs}) if $conf->{$key}->{DEF};
-    $result .= "\n${spaces}Allowed = " . join(", ", @{$conf->{$key}->{ALLOWED}}) if $conf->{$key}->{ALLOWED};
+    $req = "[REQ] " if $config{$self}->{$key}->{REQ};
+    $config{$self}->{$key}->{DESC} =~ s/\n/\n$spaces/og if $config{$self}->{$key}->{DESC};
+    $result .= sprintf "  -%-${maxoptlen}s %-${maxexlen}s : ${req}%s", $key, $config{$self}->{$key}->{EX}, $config{$self}->{$key}->{DESC};
+    $result .= "\n${spaces}Default = " . join(", ", @{$defs}) if $config{$self}->{$key}->{DEF};
+    $result .= "\n${spaces}Allowed = " . join(", ", @{$config{$self}->{$key}->{ALLOWED}}) if $config{$self}->{$key}->{ALLOWED};
     $result .= "\n";
   }
   return $result;

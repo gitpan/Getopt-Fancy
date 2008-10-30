@@ -1,6 +1,9 @@
 ######################################################################
 Revision history for Perl extension Getopt::Fancy
 
+0.06  2007/03/29
+    (RJP) Change class variables to instance for non John Singleton case
+
 0.03  2007/03/29
     (RJP) Fix warnings
 
